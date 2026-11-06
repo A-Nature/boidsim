@@ -81,12 +81,14 @@ int main(){
             }
 
             float wallStrength = sqrt(wallX * wallX + wallY * wallY);
-            if (wallStrength > 0){
-                fish[i].acceleration.x += wallX * 0.6f;
-                fish[i].acceleration.y += wallY * 0.6f;
+            float fishSpeed = sqrt(fish[i].velocity.x * fish[i].velocity.x + fish[i].velocity.y * fish[i].velocity.y);
+            if (wallStrength > 0 && fishSpeed > 0.01f){
+                fish[i].acceleration.x += (wallX > 0 ? 1 : -1) * fmaxf(0, 2 * fabsf(wallX) - 1);
+                fish[i].acceleration.y += (wallY > 0 ? 1 : -1) * fmaxf(0, 2 * fabsf(wallY) - 1);
 
-                if (fish[i].velocity.x * wallX + fish[i].velocity.y * wallY < 0){
-                    float turn = wallStrength * 0.35f;
+                float intoWall = -(fish[i].velocity.x * wallX + fish[i].velocity.y * wallY) / (fishSpeed * wallStrength);
+                if (intoWall > 0){
+                    float turn = wallStrength * 0.6f * intoWall;
                     if (fish[i].velocity.x * wallY - fish[i].velocity.y * wallX < 0){
                         turn = -turn;
                     }
@@ -122,7 +124,8 @@ int main(){
                 }
             }
 
-            float averageAngle = 0;
+            float alignSumX = 0;
+            float alignSumY = 0;
             int angleAmount = 0;
             for (int j = 0; j < fish.size(); j++){
                 float differenceX = fish[j].position.x - fish[i].position.x;
@@ -130,15 +133,15 @@ int main(){
                 float distance = sqrt(differenceX * differenceX + differenceY * differenceY);
 
                 if (distance < 175 && i != j){
-                    float currentAngle = atan2f(fish[j].velocity.y, fish[j].velocity.x);
-                    averageAngle += currentAngle;
+                    alignSumX += fish[j].velocity.x;
+                    alignSumY += fish[j].velocity.y;
                     angleAmount++;
                     currentlyStraight = false;
                 }
             }
 
             if (angleAmount > 0){
-                averageAngle /= angleAmount;
+                float averageAngle = atan2f(alignSumY, alignSumX);
 
                 fish[i].acceleration.x += cosf(averageAngle) * alignWeight;
                 fish[i].acceleration.y += sinf(averageAngle) * alignWeight;
